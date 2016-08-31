@@ -53,6 +53,7 @@
         
         plotSurface <- ggplot(data=df1, aes(x=x1, y=x2, z=z))
         plotSurface <- plotSurface + geom_contour(aes(col=..level..), bins=10)
+        plotSurface <- plotSurface + geom_point(data = dfOpt[1,], aes(x=x1, y=x2), col=rgb(127,201,127, maxColorValue = 255), size=3)
         plotSurface <- plotSurface + theme_minimal()
         plotSurface
       
@@ -64,6 +65,27 @@
 # Server
 
 shinyServer(function(input, output, session){
+        
+        observeEvent(input$myGuess, {
+                
+                shinyjs::hide(id="divMyUpdate", anim = TRUE, animType = "slide")
+                shinyjs::hide(id="divType", anim = TRUE, animType = "slide")
+                shinyjs::hide(id="divX1", anim = TRUE, animType = "slide")
+                shinyjs::hide(id="divX2", anim = TRUE, animType = "slide")
+                shinyjs::hide(id="divReps", anim = TRUE, animType = "slide")
+                shinyjs::show(id="divGuess", anim = TRUE, animType = "slide")
+                shinyjs::show(id="divMyFinish", anim = TRUE, animType = "slide")
+                
+        })
+        
+        observeEvent(input$myFinish, {
+                
+                shinyjs::show(id="divPlotSurface", anim = TRUE, animType = "slide")
+                shinyjs::hide(id="divGuess", anim = TRUE, animType = "slide")
+                
+        })
+        
+        
         
         dfMyDesign <- reactive({  # This is the Current Design in the UI
                 
@@ -172,39 +194,19 @@ shinyServer(function(input, output, session){
 
         })
         
-        # output$plotResults <- renderPlotly({
-        # 
-        #         dfDOE <- dfDOE()
-        #         dfOut <- dfOut()
-        #         dfMyDesign <- dfMyDesign()
-        # 
-        #         # Plot
-        # 
-        #         p1 <- ggplot(data=dfDOE, aes(x=x1, y=x2, label=round(z,1)))
-        #         p1 <-p1 + geom_point(size=3, col=rgb(127,201,127, maxColorValue = 255))
-        #         # 127,201,127  green
-        #         # 190,174,212  violet
-        #         # 253,192,134  orange
-        #         p1 <- p1 + theme_minimal()
-        #         p1 <- p1 + scale_x_continuous(limits=c(0,100))
-        #         p1 <- p1 + scale_y_continuous(limits=c(0,100))
-        #         p1 <- p1 + geom_contour(data=dfOut, aes(x=x1, y=x2, z=z, col=..level..))
-        # 
-        #         p1 <- p1 + geom_point(data=dfMyDesign, aes(x=x1, y=x2), col=rgb(190,174,212, maxColorValue = 255))
-        # 
-        #         p1 <- plotly_build(p1)
-        # 
-        #         p1
-        # })
-        
-        
         output$plotSurface <- renderPlotly({
+                
+                print(df1)
+                df2 <- df1 %>% 
+                        filter(x1 == input$x1Guess, x2 == input$x2Guess) %>% 
+                        mutate(z = b0 + b1*(x1-50) + b2*(x2-50) + b12*(x1-50)*(x2-50) + b11*(x1-50)^2 + b22*(x2-50)^2)
+                
+                plotSurface <- plotSurface + geom_point(data = df2, aes(x=x1, y=x2))
                 
                 p <- plotly_build(plotSurface)
                 p
                 
         })
-        
         
 })
         

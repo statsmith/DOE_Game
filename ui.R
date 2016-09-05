@@ -25,28 +25,35 @@ myBody <- dashboardBody(
                 
                 column(width=8,
                        
-                       box(title = "Plot", width = 12,
-                           plotlyOutput("plotResults")
-                       ),
-                       
-                       box(title = "Data Table", width = 12, collapsible = TRUE, collapsed = TRUE,
-                           DT::dataTableOutput("dfDOE")    
-                       ),
-                        
-                       
                        shinyjs::hidden(
-                               
                                div(
                                        id="divPlotSurface",
                                        box(title = "Surface", width = 12, 
                                            plotlyOutput("plotSurface")       
                                        )
-                                       
                                )
+                       ),
+                       
+                       shinyjs::hidden(
+                               div(
+                                       id="divLinkOutput",
+                                       actionLink(inputId = "linkOutput", label = "Show/Hide DOE")
+                               )
+                       ),
+                       
+                       div(
+                               id="divOutput",
+                               
+                               box(title = "Plot", width = 12,
+                                   plotlyOutput("plotResults")
+                               ),
+                               
+                               box(title = "Data Table", width = 12, collapsible = TRUE, collapsed = TRUE,
+                                   DT::dataTableOutput("dfDOE")    
+                               )        
                                
                        )
                        
-                      
                        
                 ),
                 
@@ -65,7 +72,7 @@ myBody <- dashboardBody(
                        shinyjs::hidden(
                                div(
                                        id="divMyFinish", style="display:inline-block",
-                                       actionButton(inputId = "myFinish", label = "Show Results")        
+                                       actionButton(inputId = "myFinish", label = "Submit My Guess")        
                                )
                        ),
                        
@@ -107,11 +114,20 @@ myBody <- dashboardBody(
                                        numericInput(inputId = "x1Guess", "X1", value = NA),
                                        numericInput(inputId = "x2Guess", "X2", value = NA)
                                )
+                       ),
+                       shinyjs::hidden(
+                       div(
+                               id="divSummary",
+                               
+                               DT::dataTableOutput("dfSummary"),
+                               
+                               box(
+                                       width = 12,
+                                       valueBoxOutput("mySummary")        
+                               )
+                               
                        )
-                       
-                       
-                       
-                       
+                       )
                 )
                 
         )
@@ -120,10 +136,5 @@ myBody <- dashboardBody(
                # myCenter <- "No"
                # myBlocks <- c(1) # In Shiny Call "Corners" "Starts" but Return Numbers..
                
-               
-        
-
-
-
 
 dashboardPage(myHeader, mySidebar, myBody)

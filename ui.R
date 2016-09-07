@@ -119,12 +119,11 @@ myBody <- dashboardBody(
                        div(
                                id="divSummary",
                                
-                               DT::dataTableOutput("dfSummary"),
-                               
-                               box(
-                                       width = 12,
-                                       valueBoxOutput("mySummary")        
-                               )
+                               valueBoxOutput("mySummary", width=12),    
+                               tags$br(), tags$br(),
+                               DT::dataTableOutput("dfSummary")
+
+                                          
                                
                        )
                        )

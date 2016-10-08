@@ -11,71 +11,8 @@
         library(rsm)
         library(DT)
 
-        
-        
 # Constants
         
-        # Define the Relationship Between Response (y) and Factors (x1, x2)
-
-        b0 <- runif(n = 1, min = 1000, max = 6000)
-        b1 <- rnorm(n = 1, mean = 0, sd = 50)
-        b2 <- rnorm(n = 1, mean = 0, sd = 50)
-        b12 <- rnorm(n = 1, mean = 0, sd = 1)
-        b11 <- -abs(rnorm(n = 1, mean = 0, sd = 1.37))
-        b22 <- -abs(rnorm(n = 1, mean = 0, sd = 1.37))
-        c1 <- rnorm(n = 1, mean = 50, sd = 10)
-        c2 <- rnorm(n = 1, mean = 50, sd = 10)
-        c3 <- rnorm(n = 1, mean = 50, sd = 5)
-        c4 <- rnorm(n = 1, mean = 50, sd = 5)
-        c5 <- rnorm(n = 1, mean = 50, sd = 5)
-        c6 <- rnorm(n = 1, mean = 50, sd = 5)
-        
-        # 
-        # b0 <- runif(n = 1, min = 4, max = 60)
-        # b1 <- rnorm(n = 1, mean = 0, sd = 5)
-        # b2 <- rnorm(n = 1, mean = 0, sd = 5)
-        # b12 <- rnorm(n = 1, mean = 0, sd = 0.05)
-        # b11 <- -abs(rnorm(n = 1, mean = 0, sd = 0.05))
-        # b22 <- -abs(rnorm(n = 1, mean = 0, sd = 0.05))
-        
-        # Initialize Data Frame
-        
-        dfDOE <- data.frame(x1 = numeric(), x2 = numeric(), z=numeric())   # This is a Null Data Frame to Which UI Designs are Added
-        write.csv(x = dfDOE, file = "dfDOE.csv", row.names=FALSE)
-        
-        # Create the Space
-        
-        df1 <- tbl_df(data.frame(expand.grid(x1=0:100, x2=0:100)))
-        df1 <- df1 %>% 
-                mutate(z = b0 + b1*(x1-c1) + b2*(x2-c2) + b12*(x1-c3)*(x2-c4) + b11*(x1-c5)^2 + b22*(x2-c6)^2)
-                # mutate(z = b0 + b1*(x1-50) + b2*(x2-50) + b12*(x1-50)*(x2-50) + b11*(x1-50)^2 + b22*(x2-50)^2)
-        
-        # Find Optimal
-        
-        dfOpt <- df1 %>% 
-                filter(z == max(df1$z) | z == min(df1$z)) %>% 
-                arrange(desc(z))
-        
-        # Calculate Range of Response Variable
-        
-        myRange <- as.numeric(dfOpt[1,3] - dfOpt[2,3])
-        
-        # Assume Noise for Response Variable ~ 10% of Scale
-        
-        myS <- myRange * 0.10
-        
-        # Plot Total Response Surface
-        
-        plotSurface <- ggplot(data=df1, aes(x=x1, y=x2, z=z))
-        plotSurface <- plotSurface + geom_contour(aes(col=..level..), bins=10, size=0.5)
-        plotSurface <- plotSurface + geom_point(data = dfOpt[1,], aes(x=x1, y=x2), col=rgb(127,201,127, maxColorValue = 255), size=3)
-        plotSurface <- plotSurface + geom_text(data=dfOpt[1,], aes(x=x1, y=x2), label="Optimal", col=rgb(127,201,127, maxColorValue = 255))
-        plotSurface <- plotSurface + theme_minimal()
-        plotSurface <- plotSurface + scale_color_continuous(low = rgb(166,206,227,maxColorValue = 255), high = rgb(0,51,102, maxColorValue = 255), name="Score")
-        
-        
-        plotSurface
-      
 # Functions
         
         source("fScreen.R")
@@ -85,15 +22,87 @@
 
 shinyServer(function(input, output, session){
         
-        myRV <- reactiveValues(myStart = TRUE)
+        myRV <- reactiveValues(
+                myStart = TRUE,
+                b0 = runif(n = 1, min = 1000, max = 6000),
+                b1 = rnorm(n = 1, mean = 0, sd = 50),
+                b2 = rnorm(n = 1, mean = 0, sd = 50),
+                b12 = rnorm(n = 1, mean = 0, sd = 1),
+                b11 = -abs(rnorm(n = 1, mean = 0, sd = 1.37)),
+                b22 = -abs(rnorm(n = 1, mean = 0, sd = 1.37)),
+                c1 = rnorm(n = 1, mean = 50, sd = 10),
+                c2 = rnorm(n = 1, mean = 50, sd = 10),
+                c3 = rnorm(n = 1, mean = 50, sd = 5),
+                c4 = rnorm(n = 1, mean = 50, sd = 5),
+                c5 = rnorm(n = 1, mean = 50, sd = 5),
+                c6 = rnorm(n = 1, mean = 50, sd = 5),
+                df1 = NULL,
+                dfOpt = NULL
+        )
         
-        session$onFlushed(function() {
-                myRV$myStart <- FALSE
+        
+        
+        observe({
+                # Create the Space   
+                myRV$df1 <- tbl_df(data.frame(expand.grid(x1=0:100, x2=0:100))) %>%
+                        mutate(z = myRV$b0 + myRV$b1*(x1-myRV$c1) + myRV$b2*(x2-myRV$c2) + myRV$b12*(x1-myRV$c3)*(x2-myRV$c4) + myRV$b11*(x1-myRV$c5)^2 + myRV$b22*(x2-myRV$c6)^2)
         })
         
+        observe({
+                # Find Optimal
+                myRV$dfOpt <-  myRV$df1 %>%
+                        filter(z == max(myRV$df1[["z"]]) | z == min(myRV$df1[["z"]])) %>%
+                        arrange(desc(z))
+        })
+        
+        observe({
+                # Calculate Range of Response Variable
+                myRV$myRange <- as.numeric(myRV$dfOpt[1,3] - myRV$dfOpt[2,3])
+        })
+        
+        observe({
+                # Assume Noise for Response Variable ~ 10% of Scale
+                myRV$myS <- myRV$myRange * 0.10
+        })
+        
+        observe({
+                # Plot Total Response Surface
+                plotSurface <- ggplot(data=myRV$df1, aes(x=x1, y=x2, z=z))
+                plotSurface <- plotSurface + geom_contour(aes(col=..level..), bins=10, size=0.5)
+                plotSurface <- plotSurface + geom_point(data = myRV$dfOpt[1,], aes(x=x1, y=x2), col=rgb(127,201,127, maxColorValue = 255), size=3)
+                plotSurface <- plotSurface + geom_text(data=myRV$dfOpt[1,], aes(x=x1, y=x2), label="Optimal", col=rgb(127,201,127, maxColorValue = 255))
+                plotSurface <- plotSurface + theme_minimal()
+                plotSurface <- plotSurface + scale_color_continuous(low = rgb(166,206,227,maxColorValue = 255), high = rgb(0,51,102, maxColorValue = 255), name="Score")
+                
+                myRV$plotSurface <- plotSurface
+                
+        })
+        
+  
+        session$onFlushed(function() {
+                myRV$myStart <- TRUE
+        })
+
         observeEvent(session$onFlushed, {
-                dfDOE <- data.frame(x1=numeric, x2=numeric, Block=numeric, z=numeric)
-                write.csv(x = dfDOE, file = "dfDOE.csv",row.names = FALSE)
+        
+                # Re-initialize Data Frame
+
+                dfDOE <- data.frame(x1 = numeric(), x2 = numeric(), z=numeric())   # This is a Null Data Frame to Which UI Designs are Added
+                write.csv(x = dfDOE, file = "dfDOE.csv", row.names=FALSE)
+           
+                myRV$b0 <- runif(n = 1, min = 1000, max = 6000)
+                myRV$b1 <- rnorm(n = 1, mean = 0, sd = 50)
+                myRV$b2 <- rnorm(n = 1, mean = 0, sd = 50)
+                myRV$b12 <- rnorm(n = 1, mean = 0, sd = 1)
+                myRV$b11 <- -abs(rnorm(n = 1, mean = 0, sd = 1.37))
+                myRV$b22 <- -abs(rnorm(n = 1, mean = 0, sd = 1.37))
+                myRV$c1 <- rnorm(n = 1, mean = 50, sd = 10)
+                myRV$c2 <- rnorm(n = 1, mean = 50, sd = 10)
+                myRV$c3 <- rnorm(n = 1, mean = 50, sd = 5)
+                myRV$c4 <- rnorm(n = 1, mean = 50, sd = 5)
+                myRV$c5 <- rnorm(n = 1, mean = 50, sd = 5)
+                myRV$c6 <- rnorm(n = 1, mean = 50, sd = 5)
+              
         })
         
         observeEvent(input$myGuess, {
@@ -135,11 +144,8 @@ shinyServer(function(input, output, session){
                 }
                 
                 myDesign <-  myDesign %>% 
-                        mutate(z = b0 + b1*(x1-c1) + b2*(x2-c2) + b12*(x1-c3)*(x2-c4) + b11*(x1-c5)^2 + b22*(x2-c6)^2) %>% 
-                        # mutate(z = b0 + b1*(x1-50) + b2*(x2-50) + b12*(x1-50)*(x2-50) + b11*(x1-50)^2 + b22*(x2-50)^2) %>% 
-                        mutate(z = z + rnorm(n = nrow(myDesign), mean = 0, sd = myS))
-                
-                # print(myDesign)
+                        mutate(z = myRV$b0 + myRV$b1*(x1-myRV$c1) + myRV$b2*(x2-myRV$c2) + myRV$b12*(x1-myRV$c3)*(x2-myRV$c4) + myRV$b11*(x1-myRV$c5)^2 + myRV$b22*(x2-myRV$c6)^2) %>% 
+                        mutate(z = z + rnorm(n = nrow(myDesign), mean = 0, sd = myRV$myS))
                 
                 myDesign
                 
@@ -157,7 +163,6 @@ shinyServer(function(input, output, session){
                 })
 
        
-
         output$dfDOE <- DT::renderDataTable({
                 
                 dfDOE()
@@ -241,12 +246,14 @@ shinyServer(function(input, output, session){
         
         output$plotSurface <- renderPlotly({
                 
-                df2 <- df1 %>% 
-                        filter(x1 == input$x1Guess, x2 == input$x2Guess) %>% 
-                        mutate(z = b0 + b1*(x1-c1) + b2*(x2-c2) + b12*(x1-c3)*(x2-c4) + b11*(x1-c5)^2 + b22*(x2-c6)^2)
-                        # mutate(z = b0 + b1*(x1-50) + b2*(x2-50) + b12*(x1-50)*(x2-50) + b11*(x1-50)^2 + b22*(x2-50)^2)
+                x1Guess <- round(input$x1Guess,0)
+                x2Guess <- round(input$x2Guess,0)
                 
-                plotSurface <- plotSurface + geom_point(data = df2, aes(x=x1, y=x2), col=rgb(red = 217, green = 95, blue = 2, maxColorValue = 255))
+                df2 <- myRV$df1 %>% 
+                        filter(x1 == x1Guess, x2 == x2Guess) %>% 
+                        mutate(z = myRV$b0 + myRV$b1*(x1-myRV$c1) + myRV$b2*(x2-myRV$c2) + myRV$b12*(x1-myRV$c3)*(x2-myRV$c4) + myRV$b11*(x1-myRV$c5)^2 + myRV$b22*(x2-myRV$c6)^2)
+                
+                plotSurface <- myRV$plotSurface + geom_point(data = df2, aes(x=x1, y=x2), col=rgb(red = 217, green = 95, blue = 2, maxColorValue = 255))
                 plotSurface <- plotSurface + geom_text(data = df2, aes(x=x1, y=x2), label="Guess", col=rgb(red = 217, green = 95, blue = 2, maxColorValue = 255))
                 
                 p <- plotly_build(plotSurface)
@@ -255,16 +262,18 @@ shinyServer(function(input, output, session){
         })
         
         
-        
         dfSummary <- reactive({
                 
                 req(input$x1Guess, input$x2Guess)
                 
-                dfMax <- dfOpt %>% select(x1, x2, z) %>% filter(row_number() == 1)
+                x1Guess <- round(input$x1Guess,0)
+                x2Guess <- round(input$x2Guess,0)
                 
-                dfGuess <- df1 %>% 
-                        filter(x1 == input$x1Guess, x2 == input$x2Guess) %>% 
-                        mutate(z = b0 + b1*(x1-c1) + b2*(x2-c2) + b12*(x1-c3)*(x2-c4) + b11*(x1-c5)^2 + b22*(x2-c6)^2)
+                dfMax <- myRV$dfOpt %>% select(x1, x2, z) %>% filter(row_number() == 1)
+                
+                dfGuess <- myRV$df1 %>% 
+                        filter(x1 == x1Guess, x2 == x2Guess) %>% 
+                        mutate(z = myRV$b0 + myRV$b1*(x1-myRV$c1) + myRV$b2*(x2-myRV$c2) + myRV$b12*(x1-myRV$c3)*(x2-myRV$c4) + myRV$b11*(x1-myRV$c5)^2 + myRV$b22*(x2-myRV$c6)^2)
                 
                 dfSummary <- bind_rows(dfMax, dfGuess)
                 dfSummary$Score <- round(dfSummary$z,0)
@@ -277,27 +286,17 @@ shinyServer(function(input, output, session){
         
         
         output$dfSummary <- DT::renderDataTable({
-                
+
                 dfSummary()
                 
         }, options=list(dom="t"))
         
         
-        # output$mySummary <- renderText({
-        #         
-        #         myDiff <- round(dfSummary()[1,3] - dfSummary()[2,3],1)
-        #         myPercentDiff <- round(100*(dfSummary()[1,3] - dfSummary()[2,3])/dfSummary()[1,3],1)
-        #         # print(myPercentDiff)
-        #         # print(nrow(dfDOE()))
-        #         mySummary <- paste("You used ", nrow(dfDOE()), " runs and were ", myPercentDiff, "% (",  myDiff, " units) off from the optimal", sep="")
-        #         
-        # })
-        
         output$mySummary <- renderValueBox({
                 
                 myDiff <- round(dfSummary()[1,3] - dfSummary()[2,3],1)
+                
                 myPercentDiff <- round(100*(dfSummary()[1,3] - dfSummary()[2,3])/dfSummary()[1,3],1)
-                mySummary <- paste("You used ", nrow(dfDOE()), " runs and were ", myPercentDiff, "% (",  myDiff, " units) off from the optimal", sep="")
                 
                 if(myPercentDiff < 10){
                         valueBox(
@@ -319,10 +318,6 @@ shinyServer(function(input, output, session){
                                 color = "red", icon = icon("thumbs-down")
                         )
                 )
-                
-                
-                
-                
                 
         })
         
